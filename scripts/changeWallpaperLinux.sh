@@ -8,14 +8,14 @@ INTERVAL="1h";
 
 HEIGHT=$(xwininfo -root | grep -w Height | cut -d' ' -f4);
 WIDTH=$(xwininfo -root | grep -w Width | cut -d' ' -f4);
-PREFIX="https:\/\/wallpapers.wallhaven.cc\/wallpapers\/full\/wallhaven\-";
+PREFIX="https://wallpapers.wallhaven.cc/wallpapers/full/wallhaven-";
 POSTFIX=".jpg";
 PAGE="1";
 CATEGORY="7";
 PURITY="4";
 SORTING="random";
 ORDER="desc";
-ATLEAST="${WIDTH}x${HEIGHT}";
+#ATLEAST="${WIDTH}x${HEIGHT}";
 RESOLUTION="${WIDTH}x${HEIGHT}";
 VARIABLE="resolutions"; # ou atleast
 REQUEST="";
@@ -24,14 +24,14 @@ REQUEST="";
 function usage(){
     echo "Usage: ";
     echo "$0 [-i INTERVAL] [ -c CATEGORY] [ -p PURITY] [ -s SORTING] [ -o ORDER] [ -t TYPE_RESOLUTION] [ -q REQUEST]";
-    echo -e "\tINTERVAL        : temps d'attente entre la récuperation des images, chiffre suivi du type : \n\t\t\texemple: 10s pour 10 secondes, 10m pour 10 minutes, 10h pour 10 heures";
-    echo -e "\tCATEGORY        : 0 = all, 3 = anime+people, 1 = people, 5 = general+people, 4 = general, 6 = general+anime, 7 = general+anime+people, 2 = anime";
-    echo -e "\tPURITY          : 4 = sfw, 0 = nsfw, 2 = nsfw+sketchy, 6 = sfw+sketchy";
-    echo -e "\tSORTING         : 0 = random, 1 = ....";
-    echo -e "\tORDER           : 0 = asc, 1 = desc";
-    echo -e "\tTYPE_RESOLUTION : 0 = resolution exacte, 1 = plus petit, 2 = plus grand";
-    echo -e "\tREQUEST         : TERM de rechercher";
-    #echo -e "\n\t============Valeurs par défaut========================)";
+    echo -e "\\tINTERVAL        : temps d'attente entre la récuperation des images, chiffre suivi du type : \\n\\t\\t\\texemple: 10s pour 10 secondes, 10m pour 10 minutes, 10h pour 10 heures";
+    echo -e "\\tCATEGORY        : 0 = all, 3 = anime+people, 1 = people, 5 = general+people, 4 = general, 6 = general+anime, 7 = general+anime+people, 2 = anime";
+    echo -e "\\tPURITY          : 4 = sfw, 0 = nsfw, 2 = nsfw+sketchy, 6 = sfw+sketchy";
+    echo -e "\\tSORTING         : 0 = random, 1 = ....";
+    echo -e "\\tORDER           : 0 = asc, 1 = desc";
+    echo -e "\\tTYPE_RESOLUTION : 0 = resolution exacte, 1 = plus petit, 2 = plus grand";
+    echo -e "\\tREQUEST         : TERM de rechercher";
+    #echo -e "\\n\\t============Valeurs par défaut========================)";
     #AJOUTER ICI LES VALEURS PAR DEFAUT
 }
 
@@ -49,40 +49,41 @@ do
         t) VARIABLE=$OPTARG ;;
         q) REQUEST=$OPTARG ;;
         h) usage ; exit 0 ;;
-
+        *)
     esac
 done
 
-shift $(($OPTIND - 1));
+shift $((OPTIND - 1));
 PURITY=$(echo "x=${PURITY}; obase=2; if(x < 2) print 0,0 else if (x < 4) print 0; x" | bc);
 CATEGORY=$(echo "x=${CATEGORY}; obase=2; if(x < 2) print 0,0 else if (x < 4) print 0; x" | bc);
-REQUEST=$(echo "${REQUEST}" | tr "[:blank:]" "[+]");
+REQUEST=$(echo "${REQUEST}" | tr '[:blank:]' '+');
 LINK="https://alpha.wallhaven.cc/search?q=${REQUEST}&categories=${CATEGORY}&purity=${PURITY}&${VARIABLE}=${RESOLUTION}&sorting=${SORTING}&order=${ORDER}&page=${PAGE}";
 REGEX="https.*/wallpaper/[0-9]{2,9}$";
-NBPAGE=$(wget -qO - "${LINK}"  | grep -Eo "<h2>Page <span class=\"thumb-listing-page-num\">[0-9]</span> / [0-9]{1,6}</h2>" | grep -Eo "/\ [0-9]{1,6}" | cut -d' ' -f2);
+NBPAGE=$(wget -qO - "${LINK}"  | grep -Eo "<h2>Page <span class=\"thumb-listing-page-num\">[0-9]</span> / [0-9]{1,6}</h2>" | grep -Eo "/\\ [0-9]{1,6}" | cut -d' ' -f2);
 
 REQUIREMENT="lynx";
 
-PREFIX_COMMAND="";
-POSTFIX_COMMAND="";
+#PREFIX_COMMAND="";
+#POSTFIX_COMMAND="";
 
 
 test -d "${DIR}" || mkdir -p "${DIR}"
 
-while [ 1 ]
+while true
 do
-    PAGE=$(( ( RANDOM % ${NBPAGE} ) + 1 ));
+    PAGE=$(( ( RANDOM % NBPAGE ) + 1 ));
     LINK="https://alpha.wallhaven.cc/search?q=${REQUEST}&categories=${CATEGORY}&purity=${PURITY}&${VARIABLE}=${RESOLUTION}&sorting=${SORTING}&order=${ORDER}&page=${PAGE}";
     echo "${LINK}";
-    command -v "${REQUIREMENT}" && {
-    #methode utilisatn lynx
-    wget $(lynx -listonly -nonumbers -dump "${LINK}" | grep -Eio "${REGEX}" | grep -Eio "[0-9]{1,9}" | uniq  >"${TMPFILE}"; sed -n $(( RANDOM % $( wc -l <"${TMPFILE}" ) + 1 ))p "${TMPFILE}" | sed  's#^#'${PREFIX}'#;s/$/'${POSTFIX}'/') -O "${TMP}/${NAME}" && mv -f "${TMP}/${NAME}" "${DIR}/${NAME}" && rm -f "${TMP}/${NAME}";
-    #echo "OK" ;
-} || {
-#methode utilisant wget si lynx non disponible
-wget $(wget "${LINK}" -O - 2>/dev/null | grep -oP 'href="\Khttps:.+?"' | sed 's/"//' | grep -Eio "${REGEX}" | grep -Eio "[0-9]{1,9}" | uniq  >"${TMPFILE}"; sed -n $(( RANDOM % $( wc -l <"${TMPFILE}" ) + 1 ))p "${TMPFILE}" | sed  's#^#'${PREFIX}'#;s/$/'${POSTFIX}'/') -O "${TMP}/${NAME}" && mv -f "${TMP}/${NAME}" "${DIR}/${NAME}" && rm -f "${TMP}/${NAME}";
-#echo "KO" ;
-    }
+    if command -v "${REQUIREMENT}"
+    then
+        #methode utilisatn lynx
+        wget $(lynx -listonly -nonumbers -dump "${LINK}" | grep -Eio "${REGEX}" | grep -Eio "[0-9]{1,9}" | uniq  >"${TMPFILE}"; sed -n $(( RANDOM % $( wc -l <"${TMPFILE}" ) + 1 ))p "${TMPFILE}" | sed  's#^#'${PREFIX}'#;s/$/'${POSTFIX}'/') -O "${TMP}"/"${NAME}" && mv -f "${TMP}"/"${NAME}" "${DIR}"/"${NAME}" && rm -f "${TMP}"/"{$NAME}";
+        #echo "OK" ;
+        else
+                #methode utilisant wget si lynx non disponible
+                wget $(wget "${LINK}" -O - 2>/dev/null | grep -oP 'href="\Khttps:.+?"' | sed 's/"//' | grep -Eio "${REGEX}" | grep -Eio "[0-9]{1,9}" | uniq  >"${TMPFILE}"; sed -n $(( RANDOM % $( wc -l <"${TMPFILE}" ) + 1 ))p "${TMPFILE}" | sed  's#^#'${PREFIX}'#;s/$/'${POSTFIX}'/') -O "${TMP}/${NAME}" && mv -f "${TMP}/${NAME}" "${DIR}/${NAME}" && rm -f "${TMP}/${NAME}";
+                #echo "KO" ;
+        fi
 
     gsettings set org.mate.background picture-filename "/usr/share/backgrounds/mate/abstract/Arc-Colors-Transparent-Wallpaper.png"
     gsettings set org.mate.background picture-filename "${DIR}/${NAME}"
